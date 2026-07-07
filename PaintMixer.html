@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="author" content="Daniel Felsky">
+<meta name="description" content="An acrylic paint mixing planner: pick up to five Golden Heavy Body tubes, see the full spectrum of mixable colours, and get simple part-based recipes.">
+<title>The Mixing Field — acrylic paint mixing planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#DDDBD4;      /* grey palette paper — neutral so paint reads true */
+    --paper-deep:#D0CEC6;
+    --card:#EDECE7;
+    --ink:#1C1B18;
+    --ink-soft:#5B5952;
+    --line:#B7B5AC;
+    --line-soft:#C9C7BF;
+    --radius:10px;
+    --mono:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans:'Archivo', 'Helvetica Neue', Arial, sans-serif;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html{ -webkit-text-size-adjust:100%; }
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:16px;
+    line-height:1.5;
+    padding:28px 18px 64px;
+  }
+  .wrap{ max-width:1000px; margin:0 auto; }
+
+  /* ---------- header ---------- */
+  header{ margin-bottom:34px; }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:10px;
+  }
+  h1{
+    font-weight:850;
+    font-stretch:112%;
+    font-size:clamp(34px, 7vw, 58px);
+    line-height:1.0;
+    letter-spacing:-.015em;
+    text-transform:uppercase;
+  }
+  .sub{
+    margin-top:12px;
+    max-width:58ch;
+    color:var(--ink-soft);
+    font-size:15px;
+  }
+
+  /* ---------- section labels ---------- */
+  section{ margin-bottom:36px; }
+  .sec-label{
+    display:flex; align-items:center; gap:12px;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:12px;
+  }
+  .sec-label::after{ content:""; flex:1; height:1px; background:var(--line); }
+  .sec-note{ font-family:var(--mono); font-size:11px; letter-spacing:.04em; color:var(--ink-soft); text-transform:none; }
+
+  /* ---------- paint slots ---------- */
+  .slots{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(168px, 1fr));
+    gap:10px;
+  }
+  .slot{
+    background:var(--card);
+    border:1px solid var(--line-soft);
+    border-radius:var(--radius);
+    padding:10px;
+  }
+  .slot-swatch{
+    height:46px;
+    border-radius:6px;
+    border:1px solid rgba(0,0,0,.14);
+    margin-bottom:8px;
+  }
+  .slot-swatch.empty{
+    background:transparent;
+    border:1px dashed var(--line);
+  }
+  .slot select{
+    width:100%;
+    font-family:var(--sans);
+    font-size:13px;
+    padding:7px 6px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:#F6F5F1;
+    color:var(--ink);
+  }
+  .slot-code{
+    font-family:var(--mono);
+    font-size:10.5px;
+    letter-spacing:.06em;
+    color:var(--ink-soft);
+    margin-top:7px;
+    min-height:14px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .custom-row{ display:flex; gap:6px; margin-top:8px; }
+  .custom-row input[type=color]{
+    width:40px; height:32px; padding:0;
+    border:1px solid var(--line); border-radius:6px; background:none;
+  }
+  .custom-row input[type=text]{
+    flex:1; min-width:0;
+    font-family:var(--sans); font-size:13px;
+    padding:6px; border:1px solid var(--line); border-radius:6px;
+    background:#F6F5F1; color:var(--ink);
+  }
+
+  /* ---------- mixing field map ---------- */
+  .field-card{
+    background:var(--card);
+    border:1px solid var(--line-soft);
+    border-radius:var(--radius);
+    padding:14px;
+  }
+  .chroma-row{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .chroma-row label{
+    font-family:var(--mono); font-size:11px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--ink-soft); flex:none;
+  }
+  .chroma-row input[type=range]{ flex:1; accent-color:var(--ink); min-width:0; }
+  .chroma-end{ font-family:var(--mono); font-size:10px; color:var(--ink-soft); flex:none; }
+  #fieldCanvas{
+    width:100%; display:block;
+    border-radius:6px;
+    border:1px solid rgba(0,0,0,.15);
+    cursor:crosshair;
+    touch-action:manipulation;
+  }
+  .field-legend{
+    margin-top:10px;
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.03em;
+    color:var(--ink-soft);
+  }
+  .empty-msg{
+    color:var(--ink-soft); font-size:14px; padding:22px 6px; text-align:center;
+  }
+
+  /* ---------- recipe ---------- */
+  .recipe-card{
+    background:var(--card);
+    border:1px solid var(--line-soft);
+    border-radius:var(--radius);
+    padding:16px;
+    display:grid;
+    grid-template-columns:140px 1fr;
+    gap:18px;
+  }
+  @media (max-width:560px){ .recipe-card{ grid-template-columns:1fr; } }
+  .recipe-swatch{
+    border-radius:8px;
+    border:1px solid rgba(0,0,0,.16);
+    min-height:120px;
+  }
+  .recipe-hex{
+    font-family:var(--mono); font-size:11px; letter-spacing:.08em;
+    color:var(--ink-soft); margin-top:6px; text-align:center;
+  }
+  .parts-line{ display:flex; flex-wrap:wrap; gap:8px 14px; margin-bottom:12px; }
+  .part-item{ display:flex; align-items:center; gap:7px; font-size:14.5px; font-weight:600; }
+  .part-dot{ width:15px; height:15px; border-radius:4px; border:1px solid rgba(0,0,0,.2); flex:none; }
+  .part-item .n{ font-family:var(--mono); font-weight:500; }
+  .practice{
+    font-size:13px; font-style:italic; color:var(--ink-soft);
+    margin:-4px 0 12px;
+  }
+  .bar{
+    display:flex; height:28px; border-radius:6px; overflow:hidden;
+    border:1px solid rgba(0,0,0,.18); margin-bottom:16px;
+  }
+  .bar-seg{ display:flex; align-items:center; justify-content:center; min-width:0; }
+  .bar-seg span{
+    font-family:var(--mono); font-size:11px; font-weight:500;
+    padding:0 3px; white-space:nowrap; overflow:hidden;
+  }
+  ol.steps{ list-style:none; counter-reset:step; }
+  ol.steps li{
+    counter-increment:step;
+    display:flex; gap:12px;
+    font-size:14.5px;
+    padding:7px 0;
+    border-top:1px solid var(--line-soft);
+  }
+  ol.steps li::before{
+    content:counter(step, decimal-leading-zero);
+    font-family:var(--mono); font-size:12px;
+    color:var(--ink-soft);
+    padding-top:2px;
+    flex:none;
+  }
+  .tip{
+    margin-top:12px;
+    font-size:13px;
+    color:var(--ink-soft);
+    border-left:3px solid var(--ink);
+    padding:2px 0 2px 10px;
+  }
+  .recipe-empty{ color:var(--ink-soft); font-size:14px; padding:8px 2px; }
+
+  /* ---------- match ---------- */
+  .match-card{
+    background:var(--card);
+    border:1px solid var(--line-soft);
+    border-radius:var(--radius);
+    padding:16px;
+  }
+  .match-row{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .match-row input[type=color]{
+    width:58px; height:44px; padding:0;
+    border:1px solid var(--line); border-radius:8px; background:none; cursor:pointer;
+  }
+  .btn{
+    font-family:var(--sans); font-weight:700; font-size:14px;
+    background:var(--ink); color:var(--paper);
+    border:none; border-radius:8px;
+    padding:11px 18px; cursor:pointer;
+  }
+  .btn:hover{ background:#000; }
+  .btn:disabled{ opacity:.4; cursor:default; }
+  .match-hint{ font-size:13px; color:var(--ink-soft); flex-basis:100%; }
+  .match-result{ margin-top:14px; display:none; }
+  .match-pair{ display:flex; gap:10px; align-items:stretch; margin-bottom:8px; }
+  .match-cell{ flex:1; max-width:150px; }
+  .match-cell .sw{ height:52px; border-radius:6px; border:1px solid rgba(0,0,0,.18); }
+  .match-cell .lbl{
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--ink-soft); margin-top:5px;
+  }
+  .match-verdict{ font-size:14px; }
+
+  footer{
+    margin-top:8px;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    max-width:70ch;
+  }
+  .credit{
+    margin-top:16px;
+    padding-top:12px;
+    border-top:1px solid var(--line);
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+  }
+  .credit a{
+    color:var(--ink);
+    text-decoration:underline;
+    text-underline-offset:3px;
+    text-transform:none;
+  }
+  .credit a:hover{ background:var(--ink); color:var(--paper); text-decoration:none; }
+
+  button:focus-visible, select:focus-visible, input:focus-visible, canvas:focus-visible{
+    outline:2px solid var(--ink); outline-offset:2px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Acrylic · Golden Heavy Body Reference</div>
+    <h1>The Mixing Field</h1>
+    <p class="sub">Choose up to five tubes — names and colours follow the Golden Heavy Body line. The map below shows the full spectrum, hue across and light-to-dark down: the outlined region is what your tubes can actually mix, painted in the true mixed colours. Tap anywhere inside it for the recipe. The page stays grey, like palette paper, so your colours read true.</p>
+  </header>
+
+  <section>
+    <div class="sec-label">Tubes <span class="sec-note" id="tubeNote"></span></div>
+    <div class="slots" id="slots"></div>
+  </section>
+
+  <section>
+    <div class="sec-label">Mixing field <span class="sec-note" id="fieldNote"></span></div>
+    <div class="field-card">
+      <div id="fieldUI">
+        <div class="chroma-row">
+          <label for="chromaSlider">Chroma</label>
+          <span class="chroma-end">muted</span>
+          <input type="range" id="chromaSlider" min="10" max="100" value="100" aria-label="Chroma level of displayed mixes">
+          <span class="chroma-end">vivid</span>
+        </div>
+        <canvas id="fieldCanvas" role="img" aria-label="Spectrum map of mixable colours. Use the colour match tool below as an alternative way to find recipes."></canvas>
+        <div class="field-legend">outlined area = mixable with your tubes · faded spectrum = out of reach · tints top, shades bottom · ○ = selected</div>
+      </div>
+      <div class="empty-msg" id="fieldEmpty">Add at least one paint above to see what you can mix.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-label">Recipe</div>
+    <div class="recipe-card" id="recipeCard">
+      <div class="recipe-empty" id="recipeEmpty">Tap inside the outlined region of the map to see how to mix that colour.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-label">Colour match</div>
+    <div class="match-card">
+      <div class="match-row">
+        <input type="color" id="targetColor" value="#7fae9c" aria-label="Target colour">
+        <button class="btn" id="matchBtn">Find nearest mix</button>
+        <div class="match-hint">Pick any colour you're trying to hit, and this finds the closest mix your chosen paints can reach.</div>
+      </div>
+      <div class="match-result" id="matchResult">
+        <div class="match-pair">
+          <div class="match-cell"><div class="sw" id="mrTarget"></div><div class="lbl">Target</div></div>
+          <div class="match-cell"><div class="sw" id="mrMix"></div><div class="lbl">Nearest mix</div></div>
+        </div>
+        <div class="match-verdict" id="mrVerdict"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Tube colours approximate Golden Heavy Body masstones. Mixing is estimated with a two-constant Kubelka–Munk model that accounts for each pigment's opacity: transparent phthalos and quinacridones punch far above their volume, which is why pale tints can call for 20+ parts of white. Always test a small swatch before committing. A “part” is any consistent measure: a pea-sized blob, a knife-tip, a drop.
+    <div class="credit">Created by Daniel Felsky · <a href="#" id="contactLink" rel="nofollow">email</a></div>
+  </footer>
+
+</div>
+
+<script>
+/* ================= paint database =================
+   Golden Heavy Body acrylics (approximate masstones);
+   str = relative tinting strength (used for warnings) */
+const PAINTS = [
+  // Whites & Neutrals
+  {id:'tiw', name:'Titanium White',              code:'PW6',      hex:'#F5F4EF', str:2.0, group:'Whites & Neutrals'},
+  {id:'znw', name:'Zinc White',                  code:'PW4',      hex:'#F7F6F1', str:0.6, group:'Whites & Neutrals'},
+  {id:'tbf', name:'Titan Buff',                  code:'PW6:1',    hex:'#D6C6A9', str:1.2, group:'Whites & Neutrals'},
+  {id:'ng5', name:'Neutral Gray N5',             code:'PBk7+PW6', hex:'#807F7B', str:1.0, group:'Whites & Neutrals'},
+  // Yellows
+  {id:'hyl', name:'Hansa Yellow Light',          code:'PY3',      hex:'#F7EC34', str:1.4, group:'Yellows'},
+  {id:'hym', name:'Hansa Yellow Medium',         code:'PY73',     hex:'#FCD303', str:1.5, group:'Yellows'},
+  {id:'cyp', name:'Cadmium Yellow Primrose',     code:'PY35',     hex:'#FFEC40', str:1.7, group:'Yellows'},
+  {id:'cym', name:'Cadmium Yellow Medium',       code:'PY35',     hex:'#FFC30B', str:1.8, group:'Yellows'},
+  {id:'cyd', name:'Cadmium Yellow Dark',         code:'PY35',     hex:'#F9A01B', str:1.8, group:'Yellows'},
+  {id:'dry', name:'Diarylide Yellow',            code:'PY83',     hex:'#F5A623', str:1.8, group:'Yellows'},
+  {id:'nay', name:'Nickel Azo Yellow',           code:'PY150',    hex:'#9C6C13', str:1.5, group:'Yellows'},
+  {id:'npl', name:'Naples Yellow Hue',           code:'mix',      hex:'#EFD08E', str:1.0, group:'Yellows'},
+  {id:'yoc', name:'Yellow Ochre',                code:'PY43',     hex:'#BC8A43', str:1.2, group:'Yellows'},
+  {id:'yox', name:'Yellow Oxide',                code:'PY42',     hex:'#C1892E', str:1.4, group:'Yellows'},
+  // Oranges
+  {id:'cor', name:'Cadmium Orange',              code:'PO20',     hex:'#F97614', str:1.8, group:'Oranges'},
+  {id:'pyo', name:'Pyrrole Orange',              code:'PO73',     hex:'#EF4A21', str:2.0, group:'Oranges'},
+  {id:'qbo', name:'Quinacridone Burnt Orange',   code:'PO48',     hex:'#6E2E17', str:2.2, group:'Oranges'},
+  // Reds
+  {id:'crl', name:'Cadmium Red Light',           code:'PR108',    hex:'#E23A20', str:1.8, group:'Reds'},
+  {id:'crm', name:'Cadmium Red Medium',          code:'PR108',    hex:'#C81D25', str:1.8, group:'Reds'},
+  {id:'crd', name:'Cadmium Red Dark',            code:'PR108',    hex:'#9E1B26', str:1.8, group:'Reds'},
+  {id:'nrl', name:'Naphthol Red Light',          code:'PR112',    hex:'#DB2B29', str:2.0, group:'Reds'},
+  {id:'pyr', name:'Pyrrole Red',                 code:'PR254',    hex:'#C10D25', str:2.2, group:'Reds'},
+  {id:'qrd', name:'Quinacridone Red',            code:'PV19',     hex:'#B41F49', str:2.6, group:'Reds'},
+  {id:'qcr', name:'Quinacridone Crimson',        code:'PR206',    hex:'#6E1C2C', str:2.4, group:'Reds'},
+  {id:'alz', name:'Alizarin Crimson Hue',        code:'mix',      hex:'#5C1220', str:2.2, group:'Reds'},
+  // Magentas & Violets
+  {id:'qmg', name:'Quinacridone Magenta',        code:'PR122',    hex:'#7C1E52', str:2.8, group:'Magentas & Violets'},
+  {id:'qvl', name:'Quinacridone Violet',         code:'PV19',     hex:'#5E1F42', str:2.6, group:'Magentas & Violets'},
+  {id:'dxp', name:'Dioxazine Purple',            code:'PV23',     hex:'#2A1A3C', str:3.0, group:'Magentas & Violets'},
+  {id:'ulv', name:'Ultramarine Violet',          code:'PV15',     hex:'#453A7E', str:0.9, group:'Magentas & Violets'},
+  // Blues
+  {id:'ulb', name:'Ultramarine Blue',            code:'PB29',     hex:'#2A3282', str:2.0, group:'Blues'},
+  {id:'cob', name:'Cobalt Blue',                 code:'PB28',     hex:'#2C4E9C', str:1.4, group:'Blues'},
+  {id:'cbd', name:'Cerulean Blue Deep',          code:'PB36',     hex:'#23608F', str:1.3, group:'Blues'},
+  {id:'pbg', name:'Phthalo Blue (Green Shade)',  code:'PB15:3',   hex:'#0B2D62', str:4.0, group:'Blues'},
+  {id:'pbr', name:'Phthalo Blue (Red Shade)',    code:'PB15:1',   hex:'#15246A', str:3.8, group:'Blues'},
+  {id:'prh', name:'Prussian Blue Hue',           code:'mix',      hex:'#142838', str:3.0, group:'Blues'},
+  {id:'aqb', name:'Anthraquinone Blue',          code:'PB60',     hex:'#1D2743', str:2.5, group:'Blues'},
+  {id:'mbh', name:'Manganese Blue Hue',          code:'PB15',     hex:'#1287B0', str:1.6, group:'Blues'},
+  {id:'cbt', name:'Cobalt Teal',                 code:'PG50',     hex:'#35B3AC', str:1.2, group:'Blues'},
+  {id:'tqp', name:'Turquois (Phthalo)',          code:'mix',      hex:'#10606E', str:3.0, group:'Blues'},
+  // Greens
+  {id:'pgb', name:'Phthalo Green (Blue Shade)',  code:'PG7',      hex:'#06392E', str:4.0, group:'Greens'},
+  {id:'pgy', name:'Phthalo Green (Yellow Shade)',code:'PG36',     hex:'#0A4A30', str:3.8, group:'Greens'},
+  {id:'pgl', name:'Permanent Green Light',       code:'mix',      hex:'#3E9D34', str:2.0, group:'Greens'},
+  {id:'sap', name:'Sap Green Hue',               code:'mix',      hex:'#40501F', str:1.8, group:'Greens'},
+  {id:'jkg', name:'Jenkins Green',               code:'mix',      hex:'#1F2E1D', str:2.0, group:'Greens'},
+  {id:'ggd', name:'Green Gold',                  code:'PY150+PG36',hex:'#8C8A21', str:1.5, group:'Greens'},
+  {id:'cox', name:'Chromium Oxide Green',        code:'PG17',     hex:'#61754C', str:1.3, group:'Greens'},
+  {id:'vgh', name:'Viridian Green Hue',          code:'mix',      hex:'#2F7C60', str:1.0, group:'Greens'},
+  // Earths
+  {id:'rsi', name:'Raw Sienna',                  code:'PBr7',     hex:'#A5702F', str:1.2, group:'Earths'},
+  {id:'bsi', name:'Burnt Sienna',                code:'PBr7',     hex:'#7A3C20', str:1.5, group:'Earths'},
+  {id:'tro', name:'Transparent Red Iron Oxide',  code:'PR101',    hex:'#802F12', str:1.8, group:'Earths'},
+  {id:'rox', name:'Red Oxide',                   code:'PR101',    hex:'#8F392B', str:1.6, group:'Earths'},
+  {id:'vox', name:'Violet Oxide',                code:'PR101',    hex:'#6E403D', str:1.5, group:'Earths'},
+  {id:'rum', name:'Raw Umber',                   code:'PBr7',     hex:'#57503E', str:1.5, group:'Earths'},
+  {id:'bum', name:'Burnt Umber',                 code:'PBr7',     hex:'#453021', str:1.6, group:'Earths'},
+  // Blacks & Grays
+  {id:'cbk', name:'Carbon Black',                code:'PBk7',     hex:'#1D1E1F', str:3.0, group:'Blacks & Grays'},
+  {id:'bbk', name:'Bone Black',                  code:'PBk9',     hex:'#232326', str:2.0, group:'Blacks & Grays'},
+  {id:'mbk', name:'Mars Black',                  code:'PBk11',    hex:'#272727', str:2.5, group:'Blacks & Grays'},
+  {id:'pgr', name:"Payne's Gray",                code:'mix',      hex:'#33404E', str:2.0, group:'Blacks & Grays'},
+];
+const GROUPS = ['Whites & Neutrals','Yellows','Oranges','Reds','Magentas & Violets','Blues','Greens','Earths','Blacks & Grays'];
+
+/* Scattering power (hiding/opacity): ~14 for titanium white,
+   ~5 for opaque cadmiums and oxides, <1 for transparent
+   quinacridones, phthalos, and other high-chroma organics. */
+const SC = {
+  tiw:14, znw:4, tbf:10, ng5:8,
+  hyl:2.5, hym:2.5, cyp:5, cym:5, cyd:5, dry:2.5, nay:0.8, npl:8, yoc:5, yox:6,
+  cor:5, pyo:3.5, qbo:0.8,
+  crl:5, crm:5, crd:5, nrl:3.5, pyr:3.5, qrd:0.8, qcr:0.8, alz:1,
+  qmg:0.8, qvl:0.8, dxp:0.7, ulv:1.5,
+  ulb:1.5, cob:3.5, cbd:5, pbg:0.8, pbr:0.8, prh:1, aqb:0.8, mbh:1.5, cbt:6, tqp:1,
+  pgb:0.8, pgy:0.8, pgl:4, sap:1, jkg:0.8, ggd:0.8, cox:6, vgh:1.5,
+  rsi:2.5, bsi:3.5, tro:0.8, rox:5, vox:5, rum:3.5, bum:3.5,
+  cbk:1.5, bbk:2.5, mbk:5, pgr:1.5
+};
+PAINTS.forEach(p=>{ p.sc = SC[p.id] ?? 3; });
+const STRONG = 2.5; // tinting strength above which we warn
+
+/* ================= colour math ================= */
+function hexToRgb(h){ h=h.replace('#',''); return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)]; }
+function rgbToHex(r,g,b){ return '#'+[r,g,b].map(v=>Math.round(Math.max(0,Math.min(255,v))).toString(16).padStart(2,'0')).join('').toUpperCase(); }
+function s2l(c){ c/=255; return c<=0.04045 ? c/12.92 : Math.pow((c+0.055)/1.055, 2.4); }
+function l2s(c){ c=Math.max(0,Math.min(1,c)); return 255*(c<=0.0031308 ? 12.92*c : 1.055*Math.pow(c,1/2.4)-0.055); }
+function hexToLinear(hex){ return hexToRgb(hex).map(s2l); }
+
+/* Two-constant Kubelka–Munk mixing. Each paint carries a scattering
+   power `sc` (its hiding/opacity). K/S of the mix = ΣwK / ΣwS, so a
+   little transparent phthalo tints a lot, while opaque titanium
+   white's scattering genuinely lightens the mix. */
+function kmMix(entries){ // entries: [{lin:[r,g,b], w, sc}] → linear RGB triplet
+  const out=[0,0,0];
+  for(let ch=0; ch<3; ch++){
+    let K=0, S=0;
+    for(const e of entries){
+      const R=Math.min(0.995, Math.max(0.004, e.lin[ch]));
+      const ks=((1-R)*(1-R))/(2*R);
+      K += e.w*e.sc*ks;
+      S += e.w*e.sc;
+    }
+    const m=K/S;
+    out[ch] = 1 + m - Math.sqrt(m*m + 2*m);
+  }
+  return out;
+}
+
+function linToLab(lin){
+  const [r,g,b]=lin;
+  let X=r*0.4124+g*0.3576+b*0.1805, Y=r*0.2126+g*0.7152+b*0.0722, Z=r*0.0193+g*0.1192+b*0.9505;
+  X/=0.95047; Z/=1.08883;
+  const f=t=> t>0.008856 ? Math.cbrt(t) : (7.787*t + 16/116);
+  const fx=f(X), fy=f(Y), fz=f(Z);
+  return [116*fy-16, 500*(fx-fy), 200*(fy-fz)];
+}
+function hexToLab(hex){ return linToLab(hexToLinear(hex)); }
+function dE(a,b){ return Math.hypot(a[0]-b[0], a[1]-b[1], a[2]-b[2]); }
+function labToLin(L,a,b){
+  const fy=(L+16)/116, fx=fy+a/500, fz=fy-b/200;
+  const inv=t=>{ const t3=t*t*t; return t3>0.008856 ? t3 : (t-16/116)/7.787; };
+  const X=inv(fx)*0.95047, Y=inv(fy), Z=inv(fz)*1.08883;
+  return [
+    X* 3.2406 + Y*-1.5372 + Z*-0.4986,
+    X*-0.9689 + Y* 1.8758 + Z* 0.0415,
+    X* 0.0557 + Y*-0.2040 + Z* 1.0570
+  ];
+}
+
+/* ================= state ================= */
+const slots = [null,null,null,null,null];   // {name, hex, str, sc, code, lin}
+let mixes = [];        // all achievable ratios: {parts, slotIdx, hex, lab, C, hdeg}
+let cells = null;      // per map cell: array of mix indices sorted by chroma desc, or null
+let cellPick = null;   // per map cell: mix index currently displayed
+let selCell = -1;      // selected cell index
+let curF = 1;          // chroma slider fraction
+
+const DEFAULTS = ['qmg','pbg','tiw'];
+
+/* ================= slot UI ================= */
+const slotsEl = document.getElementById('slots');
+
+function buildSlot(i){
+  const d=document.createElement('div');
+  d.className='slot';
+  const opts = GROUPS.map(g=>{
+    const items = PAINTS.filter(p=>p.group===g)
+      .map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+    return `<optgroup label="${g}">${items}</optgroup>`;
+  }).join('');
+  d.innerHTML = `
+    <div class="slot-swatch empty" id="sw${i}"></div>
+    <select id="sel${i}" aria-label="Paint slot ${i+1}">
+      <option value="">— empty slot —</option>
+      ${opts}
+      <optgroup label="Other"><option value="custom">Custom paint…</option></optgroup>
+    </select>
+    <div class="custom-row" id="cr${i}" style="display:none">
+      <input type="color" id="cc${i}" value="#8a8a8a" aria-label="Custom paint colour">
+      <input type="text" id="cn${i}" placeholder="Name it" maxlength="28">
+    </div>
+    <div class="slot-code" id="cd${i}"></div>`;
+  slotsEl.appendChild(d);
+
+  const sel=d.querySelector('#sel'+i), cr=d.querySelector('#cr'+i),
+        cc=d.querySelector('#cc'+i), cn=d.querySelector('#cn'+i);
+  sel.addEventListener('change', ()=>{
+    cr.style.display = sel.value==='custom' ? 'flex' : 'none';
+    updateSlot(i);
+  });
+  cc.addEventListener('input', ()=>updateSlot(i));
+  cn.addEventListener('input', ()=>updateSlot(i));
+}
+
+function updateSlot(i){
+  const sel=document.getElementById('sel'+i);
+  const sw=document.getElementById('sw'+i);
+  const cd=document.getElementById('cd'+i);
+  const v=sel.value;
+  if(!v){
+    slots[i]=null; sw.className='slot-swatch empty'; sw.style.background=''; cd.textContent='';
+  } else if(v==='custom'){
+    const hex=document.getElementById('cc'+i).value;
+    const nm=document.getElementById('cn'+i).value.trim() || 'Custom paint';
+    slots[i]={name:nm, hex, str:1.8, sc:3, code:'CUSTOM', lin:hexToLinear(hex)};
+    sw.className='slot-swatch'; sw.style.background=hex;
+    cd.textContent='CUSTOM · '+hex.toUpperCase();
+  } else {
+    const p=PAINTS.find(x=>x.id===v);
+    slots[i]={name:p.name, hex:p.hex, str:p.str, sc:p.sc, code:p.code, lin:hexToLinear(p.hex)};
+    sw.className='slot-swatch'; sw.style.background=p.hex;
+    cd.textContent=p.code+' · '+p.hex.toUpperCase();
+  }
+  rebuildField();
+}
+
+/* ================= gamut generation ================= */
+function gcd(a,b){ return b ? gcd(b, a%b) : a; }
+
+/* Parts ladders. Chromatic paints mix in small whole-number parts.
+   Whites and near-whites also get big extender amounts, because pale
+   tints genuinely need 12–48 parts of white against strong pigment. */
+const CHROMA_LADDER = [0,1,2,3,4,5,6,8,10];
+const LIGHT_LADDER  = [0,1,2,3,4,5,6,8,10,12,16,20,24,32,40,48];
+const CHROMA_TRIM   = [0,1,2,3,5,8];
+const LIGHT_TRIM    = [0,1,2,4,6,10,16,24,36,48];
+const CHROMA_TRIM2  = [0,1,2,4,8];
+const LIGHT_TRIM2   = [0,1,2,4,8,16,32,48];
+
+function isExtender(s){
+  const lin=s.lin;
+  const Y=lin[0]*0.2126+lin[1]*0.7152+lin[2]*0.0722;
+  return Y >= 0.45;   // whites, buff, creams, bright yellows
+}
+
+function generateCandidates(active){
+  const n=active.length;
+  let ladders = active.map(a=> isExtender(a.s) ? LIGHT_LADDER : CHROMA_LADDER);
+  if(ladders.reduce((p,l)=>p*l.length,1) > 60000){
+    ladders = active.map(a=> isExtender(a.s) ? LIGHT_TRIM : CHROMA_TRIM);
+  }
+  if(ladders.reduce((p,l)=>p*l.length,1) > 45000){
+    ladders = active.map(a=> isExtender(a.s) ? LIGHT_TRIM2 : CHROMA_TRIM2);
+  }
+  const seen=new Set(), out=[];
+  const idx=new Array(n).fill(0), parts=new Array(n).fill(0);
+  const slotIdx=active.map(a=>a.i);
+  while(true){
+    let g=0, total=0;
+    for(let k=0;k<n;k++){ const v=ladders[k][idx[k]]; parts[k]=v; g=gcd(g,v); total+=v; }
+    if(total>0){
+      let key=0;                       // parts ≤ 48 fit in base-64 digits
+      for(let k=0;k<n;k++) key=key*64 + parts[k]/g;
+      if(!seen.has(key)){
+        seen.add(key);
+        const red=new Array(n), entries=[];
+        for(let k=0;k<n;k++){
+          red[k]=parts[k]/g;
+          if(red[k]>0) entries.push({lin:active[k].s.lin, w:red[k], sc:active[k].s.sc});
+        }
+        const lin=kmMix(entries);
+        const hex=rgbToHex(l2s(lin[0]), l2s(lin[1]), l2s(lin[2]));
+        const lab=linToLab(lin);
+        const C=Math.hypot(lab[1],lab[2]);
+        let hdeg=Math.atan2(lab[2],lab[1])*180/Math.PI; if(hdeg<0) hdeg+=360;
+        out.push({parts:red, slotIdx, hex, lab, C, hdeg});
+      }
+    }
+    let k=0;
+    while(k<n){ idx[k]++; if(idx[k]<ladders[k].length) break; idx[k]=0; k++; }
+    if(k===n) break;
+  }
+  return out;
+}
+
+/* ================= spectrum map ================= */
+const HB=72, LB=40;                 // hue bins × lightness bins
+const CELLN=HB*LB;
+const GHOST=new Array(CELLN);       // unreachable-spectrum backdrop, computed once
+
+function cellHueMid(hb){ return (hb+0.5)*(360/HB); }
+function cellLMid(lb){ return 100 - (lb+0.5)*(100/LB); }
+function cellOf(m){
+  const lb=Math.max(0, Math.min(LB-1, Math.floor((100-m.lab[0])/(100/LB))));
+  const hb=Math.max(0, Math.min(HB-1, Math.floor(m.hdeg/(360/HB))));
+  return lb*HB+hb;
+}
+function buildGhost(){
+  for(let lb=0; lb<LB; lb++){
+    const L=cellLMid(lb);
+    for(let hb=0; hb<HB; hb++){
+      const hr=cellHueMid(hb)*Math.PI/180, ca=Math.cos(hr), sa=Math.sin(hr);
+      let hex='#808080';
+      for(let C=95; C>=0; C-=5){
+        const lin=labToLin(L, C*ca, C*sa);
+        if(lin[0]>=-0.002&&lin[0]<=1.002&&lin[1]>=-0.002&&lin[1]<=1.002&&lin[2]>=-0.002&&lin[2]<=1.002){
+          hex=rgbToHex(l2s(lin[0]), l2s(lin[1]), l2s(lin[2]));
+          break;
+        }
+      }
+      GHOST[lb*HB+hb]=hex;
+    }
+  }
+}
+
+function thin(list){ // list sorted desc by chroma; keep ≤48 spread across it
+  if(list.length<=48) return list;
+  const out=[];
+  for(let i=0;i<48;i++) out.push(list[Math.round(i*(list.length-1)/47)]);
+  return out;
+}
+
+function bucketCells(){
+  cells=new Array(CELLN).fill(null);
+  mixes.forEach((m,i)=>{
+    const ci=cellOf(m);
+    (cells[ci] || (cells[ci]=[])).push(i);
+  });
+  for(let i=0;i<CELLN;i++) if(cells[i]){
+    cells[i].sort((a,b)=>mixes[b].C-mixes[a].C);
+    cells[i]=thin(cells[i]);
+  }
+  // close small interior holes so the region and its border read continuously
+  for(let pass=0; pass<2; pass++){
+    const add=[];
+    for(let lb=0; lb<LB; lb++) for(let hb=0; hb<HB; hb++){
+      const i=lb*HB+hb;
+      if(cells[i]) continue;
+      let cnt=0; const merged=[];
+      for(let dy=-1; dy<=1; dy++) for(let dx=-1; dx<=1; dx++){
+        if(!dx&&!dy) continue;
+        const y=lb+dy; if(y<0||y>=LB) continue;
+        const x=hb+dx; if(x<0||x>=HB) continue;
+        const nl=cells[y*HB+x];
+        if(nl){ cnt++; for(const v of nl) merged.push(v); }
+      }
+      if(cnt>=5){
+        const uniq=[...new Set(merged)].sort((a,b)=>mixes[b].C-mixes[a].C);
+        add.push([i, thin(uniq)]);
+      }
+    }
+    if(!add.length) break;
+    for(const [i,l] of add) cells[i]=l;
+  }
+}
+
+function pickByChroma(list, f){
+  const Cmax=mixes[list[0]].C;
+  const t=f*Cmax;
+  let best=list[0], bd=Infinity;
+  for(const i of list){
+    const d=Math.abs(mixes[i].C - t);
+    if(d<bd){ bd=d; best=i; }
+  }
+  return best;
+}
+
+function renderMap(){
+  const cv=document.getElementById('fieldCanvas');
+  if(!cells || !cv.clientWidth) return;
+  const dpr=window.devicePixelRatio||1;
+  const cssW=cv.clientWidth, cssH=Math.round(Math.min(420, Math.max(220, cssW*0.52)));
+  cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
+  cv.style.height=cssH+'px';
+  const ctx=cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const cw=cssW/HB, ch=cssH/LB;
+  cellPick=new Array(CELLN).fill(-1);
+
+  // cells
+  for(let lb=0; lb<LB; lb++) for(let hb=0; hb<HB; hb++){
+    const i=lb*HB+hb, x=hb*cw, y=lb*ch;
+    if(cells[i]){
+      const pick=pickByChroma(cells[i], curF);
+      cellPick[i]=pick;
+      ctx.globalAlpha=1;
+      ctx.fillStyle=mixes[pick].hex;
+      ctx.fillRect(x, y, cw+0.6, ch+0.6);
+    } else {
+      ctx.globalAlpha=0.15;
+      ctx.fillStyle=GHOST[i];
+      ctx.fillRect(x, y, cw+0.6, ch+0.6);
+    }
+  }
+  ctx.globalAlpha=1;
+
+  // border of the achievable region
+  ctx.strokeStyle='#1C1B18';
+  ctx.lineWidth=1.6;
+  ctx.beginPath();
+  for(let lb=0; lb<LB; lb++) for(let hb=0; hb<HB; hb++){
+    if(!cells[lb*HB+hb]) continue;
+    const x=hb*cw, y=lb*ch;
+    if(lb===0    || !cells[(lb-1)*HB+hb]){ ctx.moveTo(x, y);     ctx.lineTo(x+cw, y); }
+    if(lb===LB-1 || !cells[(lb+1)*HB+hb]){ ctx.moveTo(x, y+ch);  ctx.lineTo(x+cw, y+ch); }
+    if(hb===0    || !cells[lb*HB+hb-1]) { ctx.moveTo(x, y);     ctx.lineTo(x, y+ch); }
+    if(hb===HB-1 || !cells[lb*HB+hb+1]) { ctx.moveTo(x+cw, y);  ctx.lineTo(x+cw, y+ch); }
+  }
+  ctx.stroke();
+
+  // selection marker
+  if(selCell>=0){
+    const hb=selCell%HB, lb=Math.floor(selCell/HB);
+    const cx=(hb+0.5)*cw, cy=(lb+0.5)*ch;
+    ctx.beginPath(); ctx.arc(cx, cy, 6.5, 0, Math.PI*2);
+    ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=3.5; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, 6.5, 0, Math.PI*2);
+    ctx.strokeStyle='#1C1B18'; ctx.lineWidth=1.6; ctx.stroke();
+  }
+}
+
+function nearestFilled(hb, lb){
+  for(let r=1; r<=14; r++){
+    let best=-1, bd=Infinity;
+    for(let dy=-r; dy<=r; dy++) for(let dx=-r; dx<=r; dx++){
+      if(Math.max(Math.abs(dx), Math.abs(dy))!==r) continue;
+      const y=lb+dy; if(y<0||y>=LB) continue;
+      const x=hb+dx; if(x<0||x>=HB) continue;
+      const i=y*HB+x;
+      if(cells[i]){ const d=dx*dx+dy*dy; if(d<bd){ bd=d; best=i; } }
+    }
+    if(best>=0) return best;
+  }
+  return -1;
+}
+
+document.getElementById('fieldCanvas').addEventListener('click', e=>{
+  if(!cells || !cellPick) return;
+  const cv=e.currentTarget, r=cv.getBoundingClientRect();
+  const hb=Math.max(0, Math.min(HB-1, Math.floor((e.clientX-r.left)/r.width*HB)));
+  const lb=Math.max(0, Math.min(LB-1, Math.floor((e.clientY-r.top)/r.height*LB)));
+  let ci=lb*HB+hb;
+  if(!cells[ci]){
+    ci=nearestFilled(hb, lb);
+    if(ci<0) return;
+  }
+  selectMix(cellPick[ci], ci);
+  document.getElementById('recipeCard').scrollIntoView({behavior:'smooth', block:'nearest'});
+});
+
+document.getElementById('chromaSlider').addEventListener('input', e=>{
+  curF=(+e.target.value)/100;
+  requestAnimationFrame(renderMap);
+});
+
+let rTO;
+window.addEventListener('resize', ()=>{ clearTimeout(rTO); rTO=setTimeout(renderMap, 120); });
+
+function selectMix(i, cellIdx){
+  selCell = (cellIdx!==undefined) ? cellIdx : cellOf(mixes[i]);
+  renderMap();
+  renderRecipe(mixes[i]);
+}
+
+function rebuildField(){
+  const active = slots.map((s,i)=>({s,i})).filter(x=>x.s);
+  const n=active.length;
+  mixes=[]; cells=null; cellPick=null; selCell=-1;
+
+  clearRecipe();
+  document.getElementById('matchResult').style.display='none';
+  document.getElementById('matchBtn').disabled = n===0;
+  document.getElementById('tubeNote').textContent = n ? n+' of 5 chosen' : '';
+
+  const ui=document.getElementById('fieldUI');
+  const emptyEl=document.getElementById('fieldEmpty');
+  if(n===0){
+    ui.style.display='none'; emptyEl.style.display='block';
+    document.getElementById('fieldNote').textContent='';
+    return;
+  }
+  ui.style.display='block'; emptyEl.style.display='none';
+
+  mixes=generateCandidates(active);
+  bucketCells();
+  document.getElementById('fieldNote').textContent = mixes.length+' ratios mapped';
+  renderMap();
+}
+
+/* ================= recipe ================= */
+function activeParts(m){
+  const out=[];
+  m.parts.forEach((p,k)=>{ if(p>0) out.push({p, s:slots[m.slotIdx[k]]}); });
+  out.sort((a,b)=>b.p-a.p);
+  return out;
+}
+function recipeText(m){
+  return activeParts(m).map(x=>`${x.p} part${x.p>1?'s':''} ${x.s.name}`).join(', ');
+}
+function clearRecipe(){
+  document.getElementById('recipeCard').innerHTML =
+    '<div class="recipe-empty">Tap inside the outlined region of the map to see how to mix that colour.</div>';
+}
+function renderRecipe(m){
+  const ap=activeParts(m);
+  const total=ap.reduce((s,x)=>s+x.p,0);
+
+  const partsHtml = ap.map(x=>
+    `<div class="part-item"><div class="part-dot" style="background:${x.s.hex}"></div>
+     <span><span class="n">${x.p}</span> part${x.p>1?'s':''} ${x.s.name}</span></div>`).join('');
+
+  const barHtml = ap.map(x=>{
+    const [r,g,b]=hexToRgb(x.s.hex);
+    const txt = (0.299*r+0.587*g+0.114*b) > 150 ? '#1C1B18' : '#F2F1EC';
+    return `<div class="bar-seg" style="flex:${x.p};background:${x.s.hex};color:${txt}" title="${x.p} of ${total} parts"><span>${x.p}</span></div>`;
+  }).join('');
+
+  let practice='';
+  if(ap.length>1){
+    const touches = ap.filter(x=> ap[0].p/x.p >= 6);
+    if(touches.length){
+      const names = touches.map(x=>x.s.name);
+      const list = names.length>1 ? names.slice(0,-1).join(', ')+' and '+names[names.length-1] : names[0];
+      practice = `<div class="practice">In practice: a generous pile of ${ap[0].s.name} with just a touch of ${list}.</div>`;
+    }
+  }
+
+  let steps='';
+  if(ap.length===1){
+    steps = `<li>Use ${ap[0].s.name} straight from the tube — no mixing needed.</li>`;
+  } else {
+    steps = `<li>Put <strong>${ap[0].p} part${ap[0].p>1?'s':''}</strong> of ${ap[0].s.name} on your palette.</li>`;
+    for(let k=1;k<ap.length;k++){
+      steps += `<li>Add <strong>${ap[k].p} part${ap[k].p>1?'s':''}</strong> of ${ap[k].s.name}.</li>`;
+    }
+    steps += `<li>Blend with a palette knife until completely streak-free, then compare against the swatch.</li>`;
+  }
+
+  const strong = ap.filter(x=>x.s.str>=STRONG && ap.length>1).map(x=>x.s.name);
+  const tip = strong.length
+    ? `<div class="tip">${strong.join(' and ')} ${strong.length>1?'are':'is a'} high-strength pigment${strong.length>1?'s':''} — add in small touches and mix between additions. It's much easier to darken a mix than to rescue one.</div>`
+    : '';
+
+  document.getElementById('recipeCard').innerHTML = `
+    <div>
+      <div class="recipe-swatch" style="background:${m.hex}"></div>
+      <div class="recipe-hex">${m.hex}</div>
+    </div>
+    <div>
+      <div class="parts-line">${partsHtml}</div>
+      ${practice}
+      <div class="bar" role="img" aria-label="Proportions: ${recipeText(m)}">${barHtml}</div>
+      <ol class="steps">${steps}</ol>
+      ${tip}
+    </div>`;
+}
+
+/* ================= colour match ================= */
+document.getElementById('matchBtn').addEventListener('click', ()=>{
+  if(!mixes.length) return;
+  const target=document.getElementById('targetColor').value;
+  const tl=hexToLab(target);
+  let best=0, bd=Infinity;
+  for(let i=0;i<mixes.length;i++){ const d=dE(tl,mixes[i].lab); if(d<bd){ bd=d; best=i; } }
+
+  document.getElementById('mrTarget').style.background=target;
+  document.getElementById('mrMix').style.background=mixes[best].hex;
+  let verdict;
+  if(bd<5)       verdict='Near-exact match — this mix should be indistinguishable in practice.';
+  else if(bd<12) verdict='Close match — a small nudge of one paint may get you the rest of the way.';
+  else if(bd<25) verdict='Approximate — this is the nearest your current paints can reach.';
+  else           verdict='This colour sits outside what these paints can mix. Try adding a tube closer to the target hue.';
+  document.getElementById('mrVerdict').textContent=verdict;
+  document.getElementById('matchResult').style.display='block';
+
+  selectMix(best);
+});
+
+/* ================= init ================= */
+buildGhost();
+for(let i=0;i<5;i++) buildSlot(i);
+DEFAULTS.forEach((id,i)=>{ document.getElementById('sel'+i).value=id; updateSlot(i); });
+
+/* Contact link assembled at runtime from scrambled fragments, so the
+   address never appears in the page source or static DOM. The mailto
+   itself is only constructed at the moment of a real click. */
+(function(){
+  const a=document.getElementById('contactLink');
+  if(!a) return;
+  const r=s=>s.split('').reverse().join('');
+  const addr=r('ykslefd')+String.fromCharCode(64)+r('liamg')+String.fromCharCode(46)+r('moc');
+  a.textContent=addr;
+  a.addEventListener('click', e=>{
+    e.preventDefault();
+    location.href='mai'+'lto:'+addr;
+  });
+})();
+</script>
+</body>
+</html>
