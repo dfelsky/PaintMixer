@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="author" content="Daniel Felsky">
-<meta name="description" content="An acrylic paint mixing planner: pick up to five Golden Heavy Body tubes, see the full spectrum of mixable colours, and get simple part-based recipes.">
-<title>The Mixing Field — acrylic paint mixing planner</title>
+<meta name="description" content="An acrylic paint mixing planner: pick up to six Golden Heavy Body tubes, see the full spectrum of mixable colours, and get simple part-based recipes — or unmix any colour into the paints that make it.">
+<title>The Mixing Field — acrylic paint mixing &amp; unmixing planner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -271,6 +271,74 @@
   }
   .credit a:hover{ background:var(--ink); color:var(--paper); text-decoration:none; }
 
+  /* ---------- mode toggle ---------- */
+  .mode-toggle{
+    display:inline-flex; border:1px solid var(--line); border-radius:9px;
+    overflow:hidden; margin-top:18px; background:var(--card);
+  }
+  .mode-btn{
+    font-family:var(--sans); font-weight:700; font-size:14px;
+    padding:9px 28px; border:none; background:transparent;
+    color:var(--ink-soft); cursor:pointer;
+  }
+  .mode-btn.active{ background:var(--ink); color:var(--paper); }
+
+  /* ---------- swatch-grid paint picker ---------- */
+  .pick-btn{
+    width:100%; display:flex; align-items:center; gap:7px;
+    font-family:var(--sans); font-size:13px;
+    padding:7px 8px; border:1px solid var(--line); border-radius:6px;
+    background:#F6F5F1; color:var(--ink); cursor:pointer; text-align:left;
+  }
+  .pick-btn .chip{ width:16px; height:16px; border-radius:4px; border:1px solid rgba(0,0,0,.18); flex:none; }
+  .pick-btn .chip.empty{ background:transparent; border-style:dashed; }
+  .pick-btn .pick-name{ flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pick-btn::after{ content:"▾"; font-size:10px; color:var(--ink-soft); flex:none; }
+  .picker-panel{
+    position:fixed; z-index:50;
+    background:var(--card); border:1px solid var(--line); border-radius:10px;
+    box-shadow:0 10px 30px rgba(0,0,0,.22);
+    padding:12px; width:min(480px, 94vw);
+    max-height:min(600px, 86vh); overflow:auto;
+  }
+  .picker-groups{ display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; }
+  @media (max-width:420px){ .picker-groups{ grid-template-columns:1fr; } }
+  .pg-label{
+    font-family:var(--mono); font-size:9.5px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--ink-soft); margin-bottom:4px;
+  }
+  .pg-swatches{ display:flex; flex-wrap:wrap; gap:5px; }
+  .pswatch{ width:26px; height:26px; border-radius:5px; border:1px solid rgba(0,0,0,.22); cursor:pointer; padding:0; }
+  .pswatch.sel{ outline:2px solid var(--ink); outline-offset:1px; }
+  .picker-foot{
+    margin-top:10px; padding-top:8px; border-top:1px solid var(--line-soft);
+    display:flex; align-items:center; gap:8px;
+  }
+  .picker-name{ flex:1; font-family:var(--mono); font-size:11px; color:var(--ink-soft); min-height:15px; }
+  .picker-action{
+    font-family:var(--sans); font-size:12px; font-weight:600;
+    background:transparent; border:1px solid var(--line); border-radius:6px;
+    padding:5px 10px; cursor:pointer; color:var(--ink);
+  }
+  .picker-action:hover{ background:var(--paper-deep); }
+
+  /* ---------- unmix ---------- */
+  .hexbox{
+    font-family:var(--mono); font-size:13px; width:96px;
+    padding:9px 8px; border:1px solid var(--line); border-radius:8px;
+    background:#F6F5F1; color:var(--ink);
+  }
+  .solutions{ display:grid; gap:12px; margin-top:14px; }
+  .solution{ border:1px solid var(--line-soft); border-radius:8px; padding:12px; background:#F6F5F1; }
+  .sol-head{ display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+  .sol-rank{
+    font-family:var(--mono); font-size:11px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--ink-soft);
+  }
+  .sol-sw{ width:34px; height:34px; border-radius:6px; border:1px solid rgba(0,0,0,.18); flex:none; }
+  .sol-arrow{ font-size:14px; color:var(--ink-soft); }
+  .sol-de{ font-family:var(--mono); font-size:11px; color:var(--ink-soft); margin-left:auto; }
+
   button:focus-visible, select:focus-visible, input:focus-visible, canvas:focus-visible{
     outline:2px solid var(--ink); outline-offset:2px;
   }
@@ -282,8 +350,14 @@
   <header>
     <div class="eyebrow">Acrylic · Golden Heavy Body Reference</div>
     <h1>The Mixing Field</h1>
-    <p class="sub">Choose up to five tubes — names and colours follow the Golden Heavy Body line. The map below shows the full spectrum, hue across and light-to-dark down: the outlined region is what your tubes can actually mix, painted in the true mixed colours. Tap anywhere inside it for the recipe. The page stays grey, like palette paper, so your colours read true.</p>
+    <p class="sub">Choose up to six tubes — names and colours follow the Golden Heavy Body line. The map below shows the full spectrum, hue across and light-to-dark down: the outlined region is what your tubes can actually mix, painted in the true mixed colours. Tap anywhere inside it for the recipe. The page stays grey, like palette paper, so your colours read true.</p>
+    <div class="mode-toggle" role="tablist" aria-label="Mode">
+      <button type="button" class="mode-btn active" id="modeMixBtn" role="tab" aria-selected="true">Mix</button>
+      <button type="button" class="mode-btn" id="modeUnmixBtn" role="tab" aria-selected="false">Unmix</button>
+    </div>
   </header>
+
+  <div id="mixMode">
 
   <section>
     <div class="sec-label">Tubes <span class="sec-note" id="tubeNote"></span></div>
@@ -331,6 +405,23 @@
       </div>
     </div>
   </section>
+
+  </div><!-- /mixMode -->
+
+  <div id="unmixMode" style="display:none">
+    <section>
+      <div class="sec-label">Unmix a colour <span class="sec-note" id="unmixNote"></span></div>
+      <div class="match-card">
+        <div class="match-row">
+          <input type="color" id="unmixColor" value="#7fae9c" aria-label="Colour to unmix">
+          <input type="text" class="hexbox" id="unmixHex" value="#7FAE9C" maxlength="7" aria-label="Hex code">
+          <button class="btn" id="unmixBtn">Find paint recipes</button>
+          <div class="match-hint">Pick any colour — or type its hex code — and get the closest recipes built from the full Golden Heavy Body line: which tubes to buy and the parts to mix.</div>
+        </div>
+        <div class="solutions" id="unmixResults" style="display:none"></div>
+      </div>
+    </section>
+  </div>
 
   <footer>
     Tube colours approximate Golden Heavy Body masstones. Mixing is estimated with a two-constant Kubelka–Munk model that accounts for each pigment's opacity: transparent phthalos and quinacridones punch far above their volume, which is why pale tints can call for 20+ parts of white. Always test a small swatch before committing. A “part” is any consistent measure: a pea-sized blob, a knife-tip, a drop.
@@ -480,7 +571,10 @@ function labToLin(L,a,b){
 }
 
 /* ================= state ================= */
-const slots = [null,null,null,null,null];   // {name, hex, str, sc, code, lin}
+const NSLOTS = 6;
+const slots = new Array(NSLOTS).fill(null); // {name, hex, str, sc, code, lin}
+const slotVals = new Array(NSLOTS).fill('');// paint id | 'custom' | ''
+let suspendRebuild = false;
 let mixes = [];        // all achievable ratios: {parts, slotIdx, hex, lab, C, hdeg}
 let cells = null;      // per map cell: array of mix indices sorted by chroma desc, or null
 let cellPick = null;   // per map cell: mix index currently displayed
@@ -495,18 +589,11 @@ const slotsEl = document.getElementById('slots');
 function buildSlot(i){
   const d=document.createElement('div');
   d.className='slot';
-  const opts = GROUPS.map(g=>{
-    const items = PAINTS.filter(p=>p.group===g)
-      .map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
-    return `<optgroup label="${g}">${items}</optgroup>`;
-  }).join('');
   d.innerHTML = `
     <div class="slot-swatch empty" id="sw${i}"></div>
-    <select id="sel${i}" aria-label="Paint slot ${i+1}">
-      <option value="">— empty slot —</option>
-      ${opts}
-      <optgroup label="Other"><option value="custom">Custom paint…</option></optgroup>
-    </select>
+    <button type="button" class="pick-btn" id="pick${i}" aria-haspopup="dialog" aria-label="Paint slot ${i+1}">
+      <span class="chip empty" id="chip${i}"></span><span class="pick-name" id="pn${i}">— empty slot —</span>
+    </button>
     <div class="custom-row" id="cr${i}" style="display:none">
       <input type="color" id="cc${i}" value="#8a8a8a" aria-label="Custom paint colour">
       <input type="text" id="cn${i}" placeholder="Name it" maxlength="28">
@@ -514,36 +601,105 @@ function buildSlot(i){
     <div class="slot-code" id="cd${i}"></div>`;
   slotsEl.appendChild(d);
 
-  const sel=d.querySelector('#sel'+i), cr=d.querySelector('#cr'+i),
-        cc=d.querySelector('#cc'+i), cn=d.querySelector('#cn'+i);
-  sel.addEventListener('change', ()=>{
-    cr.style.display = sel.value==='custom' ? 'flex' : 'none';
-    updateSlot(i);
+  d.querySelector('#pick'+i).addEventListener('click', e=>{
+    e.stopPropagation();
+    openPicker(i, e.currentTarget);
   });
-  cc.addEventListener('input', ()=>updateSlot(i));
-  cn.addEventListener('input', ()=>updateSlot(i));
+  d.querySelector('#cc'+i).addEventListener('input', ()=>updateSlot(i));
+  d.querySelector('#cn'+i).addEventListener('input', ()=>updateSlot(i));
+}
+
+/* Compact swatch-grid picker: all paints visible at once in a
+   square panel — no scrolling through a long dropdown. */
+const picker=document.createElement('div');
+picker.className='picker-panel';
+picker.style.display='none';
+picker.innerHTML =
+  '<div class="picker-groups">' +
+  GROUPS.map(g=>
+    '<div class="pgroup"><div class="pg-label">'+g+'</div><div class="pg-swatches">' +
+    PAINTS.filter(p=>p.group===g).map(p=>
+      `<button type="button" class="pswatch" data-id="${p.id}" style="background:${p.hex}" title="${p.name}" aria-label="${p.name}"></button>`
+    ).join('') +
+    '</div></div>'
+  ).join('') +
+  `</div>
+  <div class="picker-foot">
+    <div class="picker-name" id="pickerName">&nbsp;</div>
+    <button type="button" class="picker-action" id="pickerEmpty">Empty slot</button>
+    <button type="button" class="picker-action" id="pickerCustom">Custom…</button>
+  </div>`;
+document.body.appendChild(picker);
+let pickerSlot=-1;
+
+picker.addEventListener('click', e=>{
+  e.stopPropagation();
+  const b=e.target.closest('.pswatch');
+  if(b) choosePaint(b.dataset.id);
+});
+picker.addEventListener('mouseover', e=>{
+  const b=e.target.closest('.pswatch');
+  if(b){
+    const p=PAINTS.find(x=>x.id===b.dataset.id);
+    document.getElementById('pickerName').textContent = p.name+' · '+p.code;
+  }
+});
+picker.querySelector('#pickerEmpty').addEventListener('click', ()=>choosePaint(''));
+picker.querySelector('#pickerCustom').addEventListener('click', ()=>choosePaint('custom'));
+
+function openPicker(i, btn){
+  pickerSlot=i;
+  picker.querySelectorAll('.pswatch').forEach(b=> b.classList.toggle('sel', b.dataset.id===slotVals[i]));
+  document.getElementById('pickerName').innerHTML='&nbsp;';
+  picker.style.display='block';
+  const r=btn.getBoundingClientRect(), pw=picker.offsetWidth, ph=picker.offsetHeight;
+  const left=Math.max(8, Math.min(r.left, window.innerWidth-pw-8));
+  let top=r.bottom+6;
+  if(top+ph > window.innerHeight-8) top=Math.max(8, window.innerHeight-ph-8);
+  picker.style.left=left+'px';
+  picker.style.top=top+'px';
+}
+function closePicker(){ picker.style.display='none'; pickerSlot=-1; }
+document.addEventListener('click', ()=>{ if(picker.style.display!=='none') closePicker(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closePicker(); });
+
+function choosePaint(v){
+  if(pickerSlot<0) return;
+  const i=pickerSlot;
+  slotVals[i]=v;
+  closePicker();
+  updateSlot(i);
 }
 
 function updateSlot(i){
-  const sel=document.getElementById('sel'+i);
+  const v=slotVals[i];
   const sw=document.getElementById('sw'+i);
   const cd=document.getElementById('cd'+i);
-  const v=sel.value;
+  const chip=document.getElementById('chip'+i);
+  const pn=document.getElementById('pn'+i);
+  document.getElementById('cr'+i).style.display = v==='custom' ? 'flex' : 'none';
   if(!v){
-    slots[i]=null; sw.className='slot-swatch empty'; sw.style.background=''; cd.textContent='';
+    slots[i]=null;
+    sw.className='slot-swatch empty'; sw.style.background='';
+    chip.className='chip empty'; chip.style.background='';
+    pn.textContent='— empty slot —'; cd.textContent='';
   } else if(v==='custom'){
     const hex=document.getElementById('cc'+i).value;
     const nm=document.getElementById('cn'+i).value.trim() || 'Custom paint';
     slots[i]={name:nm, hex, str:1.8, sc:3, code:'CUSTOM', lin:hexToLinear(hex)};
     sw.className='slot-swatch'; sw.style.background=hex;
+    chip.className='chip'; chip.style.background=hex;
+    pn.textContent=nm;
     cd.textContent='CUSTOM · '+hex.toUpperCase();
   } else {
     const p=PAINTS.find(x=>x.id===v);
     slots[i]={name:p.name, hex:p.hex, str:p.str, sc:p.sc, code:p.code, lin:hexToLinear(p.hex)};
     sw.className='slot-swatch'; sw.style.background=p.hex;
+    chip.className='chip'; chip.style.background=p.hex;
+    pn.textContent=p.name;
     cd.textContent=p.code+' · '+p.hex.toUpperCase();
   }
-  rebuildField();
+  if(!suspendRebuild) rebuildField();
 }
 
 /* ================= gamut generation ================= */
@@ -792,7 +948,7 @@ function rebuildField(){
   clearRecipe();
   document.getElementById('matchResult').style.display='none';
   document.getElementById('matchBtn').disabled = n===0;
-  document.getElementById('tubeNote').textContent = n ? n+' of 5 chosen' : '';
+  document.getElementById('tubeNote').textContent = n ? n+' of '+NSLOTS+' chosen' : '';
 
   const ui=document.getElementById('fieldUI');
   const emptyEl=document.getElementById('fieldEmpty');
@@ -898,10 +1054,195 @@ document.getElementById('matchBtn').addEventListener('click', ()=>{
   selectMix(best);
 });
 
+/* ================= modes ================= */
+const modeMixBtn=document.getElementById('modeMixBtn');
+const modeUnmixBtn=document.getElementById('modeUnmixBtn');
+function setMode(m){
+  const mix = m==='mix';
+  document.getElementById('mixMode').style.display = mix ? '' : 'none';
+  document.getElementById('unmixMode').style.display = mix ? 'none' : '';
+  modeMixBtn.classList.toggle('active', mix);
+  modeUnmixBtn.classList.toggle('active', !mix);
+  modeMixBtn.setAttribute('aria-selected', mix);
+  modeUnmixBtn.setAttribute('aria-selected', !mix);
+}
+modeMixBtn.addEventListener('click', ()=>setMode('mix'));
+modeUnmixBtn.addEventListener('click', ()=>setMode('unmix'));
+
+/* ================= unmix (reverse recipes) =================
+   Given any target colour, search the full paint database for
+   1-, 2- and 3-paint combinations whose Kubelka–Munk mix lands
+   closest to it. Pairs are searched exhaustively over a parts
+   ladder; the best pairs are then extended with a third paint
+   and the top triples refined over the full ladder grid. */
+PAINTS.forEach(p=>{ p.lin = hexToLinear(p.hex); });
+function paintIsExtender(p){
+  const Y=p.lin[0]*0.2126+p.lin[1]*0.7152+p.lin[2]*0.0722;
+  return Y>=0.45;
+}
+const UNMIX_C=[1,2,3,4,5,8];
+const UNMIX_L=[1,2,4,6,10,16,24,36,48];
+function ladderOf(p){ return paintIsExtender(p) ? UNMIX_L : UNMIX_C; }
+
+function evalCombo(paints, parts, tl){
+  const entries=paints.map((p,k)=>({lin:p.lin, w:parts[k], sc:p.sc}));
+  const lin=kmMix(entries);
+  return {d:dE(tl, linToLab(lin)), hex:rgbToHex(l2s(lin[0]), l2s(lin[1]), l2s(lin[2]))};
+}
+
+function unmixSolve(targetHex){
+  const tl=hexToLab(targetHex);
+  const N=PAINTS.length;
+  const results=[];
+
+  // singles
+  for(const p of PAINTS){
+    const r=evalCombo([p],[1],tl);
+    results.push({paints:[p], parts:[1], d:r.d, hex:r.hex});
+  }
+
+  // all pairs over the parts ladder
+  const pairBest=[];
+  for(let a=0;a<N;a++) for(let b=a+1;b<N;b++){
+    const pa=PAINTS[a], pb=PAINTS[b];
+    const la=ladderOf(pa), lb=ladderOf(pb);
+    let best=null;
+    const seen=new Set();
+    for(const x of la) for(const y of lb){
+      const g=gcd(x,y), rx=x/g, ry=y/g, key=rx*64+ry;
+      if(seen.has(key)) continue;
+      seen.add(key);
+      const r=evalCombo([pa,pb],[rx,ry],tl);
+      if(!best || r.d<best.d) best={paints:[pa,pb], parts:[rx,ry], d:r.d, hex:r.hex};
+    }
+    pairBest.push(best);
+  }
+  pairBest.sort((p,q)=>p.d-q.d);
+  results.push(...pairBest.slice(0,40));
+
+  // extend the best pairs with a third paint
+  const triSeen=new Set(), triples=[];
+  for(const pr of pairBest.slice(0,14)){
+    for(const pc of PAINTS){
+      if(pr.paints.includes(pc)) continue;
+      const key=[...pr.paints.map(p=>p.id), pc.id].sort().join(',');
+      if(triSeen.has(key)) continue;
+      triSeen.add(key);
+      let best=null;
+      for(const z of ladderOf(pc)){
+        const raw=[pr.parts[0], pr.parts[1], z];
+        const g=raw.reduce((s,v)=>gcd(s,v),0);
+        const r=evalCombo([...pr.paints, pc], raw.map(v=>v/g), tl);
+        if(!best || r.d<best.d) best={paints:[...pr.paints,pc], parts:raw.map(v=>v/g), d:r.d, hex:r.hex};
+      }
+      triples.push(best);
+    }
+  }
+  triples.sort((p,q)=>p.d-q.d);
+
+  // refine the top triples over the full ladder grid
+  for(const t of triples.slice(0,6)){
+    const lads=t.paints.map(ladderOf);
+    for(const x of lads[0]) for(const y of lads[1]) for(const z of lads[2]){
+      const g=gcd(gcd(x,y),z);
+      const r=evalCombo(t.paints,[x/g,y/g,z/g],tl);
+      if(r.d<t.d){ t.d=r.d; t.parts=[x/g,y/g,z/g]; t.hex=r.hex; }
+    }
+  }
+  results.push(...triples.slice(0,30));
+
+  // rank: closeness first, with a small penalty per extra paint so a
+  // 1-tube answer beats a 3-tube answer that's only marginally closer
+  results.sort((p,q)=> (p.d+(p.paints.length-1)*0.8) - (q.d+(q.paints.length-1)*0.8));
+  const out=[], used=new Set();
+  for(const r of results){
+    const key=r.paints.map(p=>p.id).sort().join(',');
+    if(used.has(key)) continue;
+    used.add(key);
+    out.push(r);
+    if(out.length===3) break;
+  }
+  return out;
+}
+
+function verdictText(d){
+  if(d<5)  return 'Near-exact — this mix should be indistinguishable in practice.';
+  if(d<12) return 'Close — a small nudge of one paint gets you the rest of the way.';
+  if(d<25) return 'Approximate — the nearest real paints can get to this colour.';
+  return 'Out of gamut — no simple paint combination reaches this colour exactly.';
+}
+
+let lastSolutions=[], lastTarget='#7FAE9C';
+
+function renderUnmix(){
+  const wrap=document.getElementById('unmixResults');
+  wrap.style.display='grid';
+  wrap.innerHTML = lastSolutions.map((s,k)=>{
+    const order=s.paints.map((p,j)=>({p:s.parts[j], s:p})).sort((a,b)=>b.p-a.p);
+    const partsHtml=order.map(x=>
+      `<div class="part-item"><div class="part-dot" style="background:${x.s.hex}"></div>
+       <span><span class="n">${x.p}</span> part${x.p>1?'s':''} ${x.s.name}</span></div>`).join('');
+    const barHtml=order.map(x=>{
+      const [r,g,b]=hexToRgb(x.s.hex);
+      const txt=(0.299*r+0.587*g+0.114*b)>150 ? '#1C1B18' : '#F2F1EC';
+      return `<div class="bar-seg" style="flex:${x.p};background:${x.s.hex};color:${txt}"><span>${x.p}</span></div>`;
+    }).join('');
+    return `<div class="solution">
+      <div class="sol-head">
+        <span class="sol-rank">Solution ${k+1}</span>
+        <div class="sol-sw" style="background:${lastTarget}" title="Target"></div>
+        <span class="sol-arrow">≈</span>
+        <div class="sol-sw" style="background:${s.hex}" title="Mix result"></div>
+        <span class="sol-de">ΔE ${s.d.toFixed(1)}</span>
+        <button type="button" class="picker-action" data-load="${k}">Open in mixer</button>
+      </div>
+      <div class="parts-line">${partsHtml}</div>
+      ${order.length>1 ? `<div class="bar">${barHtml}</div>` : ''}
+      <div class="match-verdict">${verdictText(s.d)}</div>
+    </div>`;
+  }).join('');
+  wrap.querySelectorAll('[data-load]').forEach(b=>
+    b.addEventListener('click', ()=>loadSolution(+b.dataset.load)));
+}
+
+function loadSolution(k){
+  const s=lastSolutions[k];
+  suspendRebuild=true;
+  for(let i=0;i<NSLOTS;i++){
+    slotVals[i] = s.paints[i] ? s.paints[i].id : '';
+    updateSlot(i);
+  }
+  suspendRebuild=false;
+  rebuildField();
+  setMode('mix');
+  document.getElementById('targetColor').value=lastTarget.toLowerCase();
+  document.getElementById('matchBtn').click();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+const unmixColor=document.getElementById('unmixColor');
+const unmixHexEl=document.getElementById('unmixHex');
+unmixColor.addEventListener('input', ()=>{ unmixHexEl.value=unmixColor.value.toUpperCase(); });
+unmixHexEl.addEventListener('change', ()=>{
+  let v=unmixHexEl.value.trim();
+  if(v && v[0]!=='#') v='#'+v;
+  if(/^#[0-9a-fA-F]{6}$/.test(v)){ unmixColor.value=v.toLowerCase(); unmixHexEl.value=v.toUpperCase(); }
+  else unmixHexEl.value=unmixColor.value.toUpperCase();
+});
+document.getElementById('unmixBtn').addEventListener('click', ()=>{
+  lastTarget=unmixColor.value.toUpperCase();
+  lastSolutions=unmixSolve(lastTarget);
+  document.getElementById('unmixNote').textContent='searched '+PAINTS.length+' paints in 1–3 tube combinations';
+  renderUnmix();
+});
+
 /* ================= init ================= */
 buildGhost();
-for(let i=0;i<5;i++) buildSlot(i);
-DEFAULTS.forEach((id,i)=>{ document.getElementById('sel'+i).value=id; updateSlot(i); });
+for(let i=0;i<NSLOTS;i++) buildSlot(i);
+suspendRebuild=true;
+DEFAULTS.forEach((id,i)=>{ slotVals[i]=id; updateSlot(i); });
+suspendRebuild=false;
+rebuildField();
 
 /* Contact link assembled at runtime from scrambled fragments, so the
    address never appears in the page source or static DOM. The mailto
